@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interactive Plot: y = 1 / (x^z)</title>
+  <style>
+    :root { --pad: 14px; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: #fff;
+      color: #111;
+    }
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: var(--pad);
+    }
+    .card {
+      border: 1px solid #e6e6e6;
+      border-radius: 14px;
+      padding: var(--pad);
+      box-shadow: 0 1px 10px rgba(0,0,0,0.04);
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    label { font-weight: 600; }
+    input[type="range"] { width: min(420px, 100%); }
+    .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #f4f4f4;
+      border: 1px solid #e6e6e6;
+      font-variant-numeric: tabular-nums;
+    }
+    .hint { color: #555; font-size: 0.95rem; }
+    canvas {
+      width: 100%;
+      height: 420px; /* CSS height; actual pixels set in JS for crispness */
+      display: block;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid #f0f0f0;
+    }
+    .footer {
+      margin-top: 8px;
+      color: #666;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="row">
+        <label for="z">Parameter z</label>
+        <input id="z" type="range" min="1" max="5" step="0.1" value="2" />
+        <span class="pill">z = <span id="zVal">2.0</span></span>
+      </div>
+      <div class="hint">
+        Function: <b>y = 1 / (x^z)</b>. Domain shown: x ∈ [0.1, 5]. Values are clipped for display.
+      </div>
+
+      <canvas id="plot" aria-label="Plot of y = 1 / (x^z)"></canvas>
+
+      <div class="footer">
+        Tip: Near x → 0, the function grows quickly; the plot caps y for readability.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Config you can tweak ---
+    const X_MIN = 0.1;
+    const X_MAX = 5.0;
+
+    // We cap y so the graph stays readable (since y -> infinity as x -> 0+).
+    const Y_MAX_CAP = 10.0;
+    const Y_MIN = 0.0;
+
+    // Plot padding in canvas pixels
+    const PAD = 50;
+
+    const canvas = document.getElementById('plot');
+    const ctx = canvas.getContext('2d');
+
+    const slider = document.getElementById('z');
+    const zVal = document.getElementById('zVal');
+
+    function yOf(x, z) {
+      return 1 / Math.pow(x, z);
+    }
+
+    function resizeCanvasToDisplaySize() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.max(300, Math.floor(rect.width * dpr));
+      const h = Math.max(260, Math.floor(rect.height * dpr));
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+    }
+
+    function clear() {
+      const rect = canvas.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
+    }
+
+    function drawAxes(rect, xToPx, yToPx) {
+      const W = rect.width;
+      const H = rect.height;
+
+      // Light grid
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+
+      // vertical grid lines (x)
+      const xTicks = 10;
+      for (let i = 0; i <= xTicks; i++) {
+        const x = X_MIN + (i / xTicks) * (X_MAX - X_MIN);
+        const px = xToPx(x);
+        ctx.beginPath();
+        ctx.moveTo(px, PAD);
+        ctx.lineTo(px, H - PAD);
+        ctx.stroke();
+      }
+
+      // horizontal grid lines (y)
+      const yTicks = 10;
+      for (let i = 0; i <= yTicks; i++) {
+        const y = Y_MIN + (i / yTicks) * (Y_MAX_CAP - Y_MIN);
+        const py = yToPx(y);
+        ctx.beginPath();
+        ctx.moveTo(PAD, py);
+        ctx.lineTo(W - PAD, py);
+        ctx.stroke();
+      }
+
+      // Axes
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.lineWidth = 1.5;
+
+      // x-axis at y=0
+      const y0 = yToPx(0);
+      ctx.beginPath();
+      ctx.moveTo(PAD, y0);
+      ctx.lineTo(W - PAD, y0);
+      ctx.stroke();
+
+      // y-axis at x=X_MIN (left)
+      ctx.beginPath();
+      ctx.moveTo(PAD, PAD);
+      ctx.lineTo(PAD, H - PAD);
+      ctx.stroke();
+
+      // Labels
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+
+      // x labels
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      for (let i = 0; i <= 5; i++) {
+        const x = i; // 0..5
+        if (x < X_MIN || x > X_MAX) continue;
+        const px = xToPx(x);
+        ctx.fillText(String(x), px, (H - PAD) + 8);
+      }
+      ctx.fillText('x', (rect.width / 2), rect.height - 18);
+
+      // y labels
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      for (let i = 0; i <= 5; i++) {
+        const y = i * 2; // 0,2,4,...,10
+        const py = yToPx(y);
+        ctx.fillText(String(y), PAD - 8, py);
+      }
+      ctx.save();
+      ctx.translate(16, rect.height / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText('y', 0, 0);
+      ctx.restore();
+    }
+
+    function drawCurve(rect, z, xToPx, yToPx) {
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+
+      const W = rect.width;
+      const H = rect.height;
+
+      // sample points
+      const N = 500;
+      let started = false;
+
+      ctx.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const x = X_MIN + (i / N) * (X_MAX - X_MIN);
+        let y = yOf(x, z);
+
+        // clip
+        if (!Number.isFinite(y)) y = Y_MAX_CAP;
+        y = Math.min(Y_MAX_CAP, Math.max(Y_MIN, y));
+
+        const px = xToPx(x);
+        const py = yToPx(y);
+
+        if (!started) {
+          ctx.moveTo(px, py);
+          started = true;
+        } else {
+          ctx.lineTo(px, py);
+        }
+      }
+      ctx.stroke();
+
+      // Title/annotation
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(`y = 1 / (x^z)   (z = ${z.toFixed(1)})`, PAD, 16);
+      ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillText(`y capped at ${Y_MAX_CAP} for display`, PAD, 36);
+    }
+
+    function render() {
+      resizeCanvasToDisplaySize();
+
+      const rect = canvas.getBoundingClientRect(); // CSS pixels
+      clear();
+
+      // Mapping functions in CSS pixels
+      const W = rect.width;
+      const H = rect.height;
+
+      const xToPx = (x) => {
+        const t = (x - X_MIN) / (X_MAX - X_MIN);
+        return PAD + t * (W - 2 * PAD);
+      };
+
+      const yToPx = (y) => {
+        const t = (y - Y_MIN) / (Y_MAX_CAP - Y_MIN);
+        // invert y
+        return (H - PAD) - t * (H - 2 * PAD);
+      };
+
+      drawAxes(rect, xToPx, yToPx);
+      drawCurve(rect, Number(slider.value), xToPx, yToPx);
+    }
+
+    slider.addEventListener('input', () => {
+      zVal.textContent = Number(slider.value).toFixed(1);
+      render();
+    });
+
+    window.addEventListener('resize', render);
+
+    // init
+    zVal.textContent = Number(slider.value).toFixed(1);
+    render();
+  </script>
+</body>
+</html>
