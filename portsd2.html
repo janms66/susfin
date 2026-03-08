@@ -221,9 +221,9 @@
   }
 
   function computePoint(w, ra, rb, sa, sb, rab){
-    // sp = sqrt( w^2*sa^2 + (1-w)^2*sb^2 + w*(1-w)*sa*sb*rab )
+    // sp = sqrt( w^2*sa^2 + (1-w)^2*sb^2 + 2*w*(1-w)*sa*sb*rab )
     // rp = w*ra + (1-w)*rb
-    const term = (w*w*sa*sa) + ((1-w)*(1-w)*sb*sb) + (w*(1-w)*sa*sb*rab);
+    const term = (w*w*sa*sa) + ((1-w)*(1-w)*sb*sb) + 2*(w*(1-w)*sa*sb*rab);
     const sp = Math.sqrt(Math.max(0, term));
     const rp = (w*ra) + ((1-w)*rb);
     return { sp, rp };
