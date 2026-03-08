@@ -1,491 +1,430 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>rp vs sp Interactive Graph</title>
+  <title>Portfolio Correlation, 2-Asset Case</title>
   <style>
     :root { color-scheme: light; }
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      background:#fff; color:#000;
+    body {
+      margin: 18px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: #fff;
+      color: #000;
     }
-    .wrap{
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 18px 16px 24px;
+    .wrap { max-width: 980px; margin: 0 auto; }
+    h1 { font-size: 20px; margin: 0 0 12px 0; font-weight: 650; }
+    .panel {
+      border: 1px solid #000;
+      padding: 12px;
+      margin-bottom: 14px;
     }
-    h1{ font-size:18px; margin:0 0 10px; font-weight:650; }
-    .controls{
-      border:1px solid #000;
-      padding:12px;
-      margin-bottom:12px;
-    }
-    .grid{
-      display:grid;
+    .grid {
+      display: grid;
       grid-template-columns: repeat(6, minmax(110px, 1fr));
-      gap:10px 12px;
-      align-items:end;
+      gap: 10px;
+      align-items: end;
     }
-    .field label{
-      display:block;
-      font-size:12px;
-      margin-bottom:4px;
+    .field label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 6px;
     }
-    .field input{
-      width:100%;
-      padding:8px 10px;
-      border:1px solid #000;
-      border-radius:0;
-      font-size:14px;
-      background:#fff;
-      color:#000;
-      box-sizing:border-box;
+    .field input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      border: 1px solid #000;
+      background: #fff;
+      color: #000;
+      font-size: 14px;
+      border-radius: 0;
+      outline: none;
     }
-    .btnrow{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      margin-top:10px;
-      flex-wrap:wrap;
+    .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+      flex-wrap: wrap;
     }
-    button{
-      padding:8px 12px;
-      border:1px solid #000;
-      background:#fff;
-      color:#000;
-      cursor:pointer;
-      font-size:14px;
+    button {
+      border: 1px solid #000;
+      background: #fff;
+      color: #000;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 14px;
     }
-    button:active{ transform: translateY(1px); }
-    .note{ font-size:12px; }
-    .chartbox{
-      border:1px solid #000;
-      padding:10px;
+    button:active { transform: translateY(1px); }
+    .hint { font-size: 12px; }
+    .formula {
+      margin: 14px 0 10px 0;
+      font-size: 16px;
+      text-align: center;
     }
-    canvas{ display:block; width:100%; height:auto; }
-    .sliderbox{
-      border:1px solid #000;
-      padding:12px;
-      margin-top:12px;
+    .formula .math { display: inline-block; padding: 6px 10px; border: 1px solid #000; }
+    .chartBox {
+      border: 1px solid #000;
+      padding: 10px;
     }
-    .sliderrow{
-      display:flex;
-      gap:12px;
-      align-items:center;
-      flex-wrap:wrap;
+    canvas { display: block; width: 100%; height: auto; background: #fff; }
+    .sliderRow {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
     }
-    input[type="range"]{ width: min(520px, 100%); }
-    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-    .err{
-      margin-top:8px;
-      font-size:12px;
-      color:#000;
+    .sliderRow label {
+      font-size: 12px;
     }
-    @media (max-width: 820px){
-      .grid{ grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+    .sliderLine {
+      display: grid;
+      grid-template-columns: 1fr 70px;
+      gap: 10px;
+      align-items: center;
+    }
+    input[type="range"] { width: 100%; }
+    .mono { font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    .err { color: #000; font-size: 12px; }
+    @media (max-width: 820px) {
+      .grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Interactive Graph: <span class="mono">rp</span> (y-axis) vs <span class="mono">sp</span> (x-axis)</h1>
+    <h1>Portfolio Correlation, 2-Asset Case</h1>
 
-    <div class="controls" aria-label="inputs above graph">
-      <div class="grid">
+    <div class="panel">
+      <div class="grid" aria-label="Parameter entry boxes">
         <div class="field">
-          <label for="wa">wa (%) [0–100]</label>
-          <input id="wa" type="number" step="0.1" min="0" max="100" />
+          <label for="wa">weight in A (w<sub>A</sub>, %)</label>
+          <input id="wa" type="number" inputmode="decimal" min="0" max="100" step="0.1" />
         </div>
 
         <div class="field">
-          <label for="ra">ra (%) [0–100]</label>
-          <input id="ra" type="number" step="0.1" min="0" max="100" />
+          <label for="ra">return A (r<sub>A</sub>, %)</label>
+          <input id="ra" type="number" inputmode="decimal" min="0" max="30" step="0.1" />
         </div>
 
         <div class="field">
-          <label for="sa">sa (%) [0–300]</label>
-          <input id="sa" type="number" step="0.1" min="0" max="300" />
+          <label for="sa">standard deviation A (σ<sub>A</sub>, %)</label>
+          <input id="sa" type="number" inputmode="decimal" min="0" max="90" step="0.1" />
         </div>
 
         <div class="field">
-          <label for="rb">rb (%) [0–100]</label>
-          <input id="rb" type="number" step="0.1" min="0" max="100" />
+          <label for="rb">return B (r<sub>B</sub>, %)</label>
+          <input id="rb" type="number" inputmode="decimal" min="0" max="30" step="0.1" />
         </div>
 
         <div class="field">
-          <label for="sb">sb (%) [0–300]</label>
-          <input id="sb" type="number" step="0.1" min="0" max="300" />
+          <label for="sb">standard deviation B (σ<sub>B</sub>, %)</label>
+          <input id="sb" type="number" inputmode="decimal" min="0" max="90" step="0.1" />
         </div>
 
         <div class="field">
           <label>&nbsp;</label>
-          <button id="reset" type="button" title="Reset to initial values">Reset</button>
+          <button id="reset" type="button">Reset</button>
         </div>
       </div>
 
-      <div class="btnrow">
-        <div class="note">
-          Uses:
-          <span class="mono">sp = sqrt(wa²·sa² + (1−wa)²·sb² + wa·(1−wa)·sa·sb·rab)</span>,
-          <span class="mono">rp = wa·ra + (1−wa)·rb</span>
+      <div class="actions">
+        <div class="hint mono" id="status"></div>
+        <div class="err mono" id="err"></div>
+      </div>
+
+      <div class="formula" aria-label="Formula display">
+        <span class="math">
+          σ<sub>P</sub> =
+          √(
+          w<sub>A</sub><sup>2</sup>σ<sub>A</sub><sup>2</sup>
+          + (1 − w<sub>A</sub>)<sup>2</sup>σ<sub>B</sub><sup>2</sup>
+          + 2w<sub>A</sub>(1 − w<sub>A</sub>)σ<sub>A</sub>σ<sub>B</sub>ρ<sub>AB</sub>
+          )
+        </span>
+      </div>
+
+      <div class="chartBox">
+        <canvas id="chart" width="900" height="520" aria-label="Portfolio plot"></canvas>
+
+        <div class="sliderRow">
+          <label for="rab">correlation between A and B</label>
+          <div class="sliderLine">
+            <input id="rab" type="range" min="-1" max="1" step="0.01" />
+            <div class="mono" id="rabVal"></div>
+          </div>
         </div>
-      </div>
-
-      <div id="err" class="err" role="status" aria-live="polite"></div>
-    </div>
-
-    <div class="chartbox">
-      <canvas id="chart" width="900" height="520" aria-label="rp vs sp chart"></canvas>
-    </div>
-
-    <div class="sliderbox" aria-label="slider below graph">
-      <div class="sliderrow">
-        <label for="rab" class="mono">rab (correlation):</label>
-        <input id="rab" type="range" min="-1" max="1" step="0.01" />
-        <span class="mono" id="rabVal">0.00</span>
-      </div>
-      <div class="note" style="margin-top:6px;">
-        Slide <span class="mono">rab</span> to update the curve.
       </div>
     </div>
   </div>
 
-<script>
-(function(){
-  // ---------- Defaults ----------
-  const DEFAULTS = {
-    wa: 50,   // %
-    ra: 10,   // %
-    sa: 10,   // %
-    rb: 15,   // %
-    sb: 20,   // %
-    rab: 0.0  // [-1, 1]
-  };
-
-  // ---------- Elements ----------
-  const el = {
-    wa: document.getElementById('wa'),
-    ra: document.getElementById('ra'),
-    sa: document.getElementById('sa'),
-    rb: document.getElementById('rb'),
-    sb: document.getElementById('sb'),
-    rab: document.getElementById('rab'),
-    rabVal: document.getElementById('rabVal'),
-    reset: document.getElementById('reset'),
-    canvas: document.getElementById('chart'),
-    err: document.getElementById('err')
-  };
-  const ctx = el.canvas.getContext('2d');
-
-  // ---------- Helpers ----------
-  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-  const isFiniteNumber = (v) => Number.isFinite(v) && !Number.isNaN(v);
-
-  function setDefaults(){
-    el.wa.value = DEFAULTS.wa;
-    el.ra.value = DEFAULTS.ra;
-    el.sa.value = DEFAULTS.sa;
-    el.rb.value = DEFAULTS.rb;
-    el.sb.value = DEFAULTS.sb;
-    el.rab.value = DEFAULTS.rab;
-    el.rabVal.textContent = Number(DEFAULTS.rab).toFixed(2);
-  }
-
-  function readInputs(){
-    const waPct = Number(el.wa.value);
-    const raPct = Number(el.ra.value);
-    const saPct = Number(el.sa.value);
-    const rbPct = Number(el.rb.value);
-    const sbPct = Number(el.sb.value);
-    const rab = Number(el.rab.value);
-
-    // Validate numeric
-    const nums = { waPct, raPct, saPct, rbPct, sbPct, rab };
-    for (const [k,v] of Object.entries(nums)){
-      if (!isFiniteNumber(v)){
-        return { ok:false, msg:`"${k}" must be a number.` };
-      }
-    }
-
-    // Clamp to required ranges
-    const wa = clamp(waPct, 0, 100) / 100;      // convert to [0,1]
-    const ra = clamp(raPct, 0, 100) / 100;      // convert to [0,1]
-    const rb = clamp(rbPct, 0, 100) / 100;
-    const sa = clamp(saPct, 0, 300) / 100;      // convert % to decimal (e.g., 10% => 0.10)
-    const sb = clamp(sbPct, 0, 300) / 100;
-    const r = clamp(rab, -1, 1);
-
-    return { ok:true, wa, ra, rb, sa, sb, rab:r };
-  }
-
-  function computePoint(w, ra, rb, sa, sb, rab){
-    // sp = sqrt( w^2*sa^2 + (1-w)^2*sb^2 + 2*w*(1-w)*sa*sb*rab )
-    // rp = w*ra + (1-w)*rb
-    const term = (w*w*sa*sa) + ((1-w)*(1-w)*sb*sb) + 2*(w*(1-w)*sa*sb*rab);
-    const sp = Math.sqrt(Math.max(0, term));
-    const rp = (w*ra) + ((1-w)*rb);
-    return { sp, rp };
-  }
-
-  function buildCurve(params){
-    // Plot across w in [0,1] to show the whole curve, not just the current wa.
-    const N = 401;
-    const pts = [];
-    for (let i=0;i<N;i++){
-      const w = i/(N-1);
-      pts.push(computePoint(w, params.ra, params.rb, params.sa, params.sb, params.rab));
-    }
-    return pts;
-  }
-
-  // ---------- Drawing ----------
-  function clear(){
-    ctx.setTransform(1,0,0,1,0,0);
-    ctx.clearRect(0,0,el.canvas.width, el.canvas.height);
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0,0,el.canvas.width, el.canvas.height);
-  }
-
-  function drawAxes(plot){
-    const {x0,y0,w,h, xMin,xMax, yMin,yMax} = plot;
-
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1;
-
-    // border
-    ctx.strokeRect(x0, y0, w, h);
-
-    // axes at left/bottom of plot area
-    // x-axis line (bottom)
-    ctx.beginPath();
-    ctx.moveTo(x0, y0+h);
-    ctx.lineTo(x0+w, y0+h);
-    ctx.stroke();
-
-    // y-axis line (left)
-    ctx.beginPath();
-    ctx.moveTo(x0, y0);
-    ctx.lineTo(x0, y0+h);
-    ctx.stroke();
-
-    // ticks
-    const xTicks = 6;
-    const yTicks = 6;
-
-    ctx.fillStyle = '#000';
-    ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
-    ctx.textBaseline = 'top';
-
-    for (let i=0;i<=xTicks;i++){
-      const t = i/xTicks;
-      const x = x0 + t*w;
-      ctx.beginPath();
-      ctx.moveTo(x, y0+h);
-      ctx.lineTo(x, y0+h+6);
-      ctx.stroke();
-
-      const val = xMin + t*(xMax-xMin);
-      const label = (val*100).toFixed(1) + '%';
-      ctx.textAlign = 'center';
-      ctx.fillText(label, x, y0+h+8);
-    }
-
-    ctx.textBaseline = 'middle';
-    for (let j=0;j<=yTicks;j++){
-      const t = j/yTicks;
-      const y = y0+h - t*h;
-      ctx.beginPath();
-      ctx.moveTo(x0-6, y);
-      ctx.lineTo(x0, y);
-      ctx.stroke();
-
-      const val = yMin + t*(yMax-yMin);
-      const label = (val*100).toFixed(1) + '%';
-      ctx.textAlign = 'right';
-      ctx.fillText(label, x0-8, y);
-    }
-
-    // axis labels
-    // x label
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
-    ctx.fillText('sp', x0 + w/2, el.canvas.height - 8);
-
-    // y label (rotated)
-    ctx.save();
-    ctx.translate(14, y0 + h/2);
-    ctx.rotate(-Math.PI/2);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('rp', 0, 0);
-    ctx.restore();
-
-    // title-ish range note in plot corner (small)
-    ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText('Units: decimals shown as %', x0+8, y0+8);
-  }
-
-  function toScreen(plot, sp, rp){
-    const {x0,y0,w,h, xMin,xMax, yMin,yMax} = plot;
-    const x = x0 + (sp - xMin) / (xMax - xMin) * w;
-    const y = y0 + h - (rp - yMin) / (yMax - yMin) * h;
-    return {x,y};
-  }
-
-  function drawCurve(plot, pts){
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let i=0;i<pts.length;i++){
-      const p = toScreen(plot, pts[i].sp, pts[i].rp);
-      if (i===0) ctx.moveTo(p.x,p.y);
-      else ctx.lineTo(p.x,p.y);
-    }
-    ctx.stroke();
-  }
-
-  function drawMarker(plot, sp, rp){
-    const p = toScreen(plot, sp, rp);
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
-    ctx.fill();
-  }
-
-  function niceMax(v){
-    // make a "nice" upper bound slightly above v
-    if (v <= 0) return 0.01;
-    const exp = Math.floor(Math.log10(v));
-    const base = Math.pow(10, exp);
-    const m = v/base;
-    let n;
-    if (m <= 1) n = 1;
-    else if (m <= 2) n = 2;
-    else if (m <= 5) n = 5;
-    else n = 10;
-    return n*base;
-  }
-
-  function render(){
-    const inputs = readInputs();
-    if (!inputs.ok){
-      el.err.textContent = inputs.msg;
-      return;
-    }
-    el.err.textContent = '';
-
-    // Show rab value
-    el.rabVal.textContent = inputs.rab.toFixed(2);
-
-    const curve = buildCurve(inputs);
-    const current = computePoint(inputs.wa, inputs.ra, inputs.rb, inputs.sa, inputs.sb, inputs.rab);
-
-    // Determine ranges from curve + marker
-    let xMax = 0, yMax = 0;
-    for (const p of curve){
-      if (p.sp > xMax) xMax = p.sp;
-      if (p.rp > yMax) yMax = p.rp;
-    }
-    xMax = Math.max(xMax, current.sp);
-    yMax = Math.max(yMax, current.rp);
-
-    const plot = {
-      x0: 80,
-      y0: 20,
-      w: el.canvas.width - 110,
-      h: el.canvas.height - 90,
-      xMin: 0,
-      xMax: niceMax(xMax),
-      yMin: 0,
-      yMax: niceMax(yMax)
+  <script>
+    // ----- Defaults -----
+    const DEFAULTS = {
+      wa: 50,  // %
+      ra: 10,  // %
+      sa: 10,  // %
+      rb: 15,  // %
+      sb: 20,  // %
+      rab: 0   // correlation
     };
 
-    clear();
-    drawAxes(plot);
-    drawCurve(plot, curve);
-    drawMarker(plot, current.sp, current.rp);
+    // ----- DOM -----
+    const el = {
+      wa: document.getElementById("wa"),
+      ra: document.getElementById("ra"),
+      sa: document.getElementById("sa"),
+      rb: document.getElementById("rb"),
+      sb: document.getElementById("sb"),
+      rab: document.getElementById("rab"),
+      rabVal: document.getElementById("rabVal"),
+      reset: document.getElementById("reset"),
+      canvas: document.getElementById("chart"),
+      status: document.getElementById("status"),
+      err: document.getElementById("err"),
+    };
 
-    // Current values readout (top-right in plot area)
-    ctx.fillStyle = '#000';
-    ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'top';
-    const lines = [
-      `wa=${(inputs.wa*100).toFixed(1)}%  rab=${inputs.rab.toFixed(2)}`,
-      `sp=${(current.sp*100).toFixed(2)}%`,
-      `rp=${(current.rp*100).toFixed(2)}%`
-    ];
-    const x = plot.x0 + plot.w - 8;
-    let y = plot.y0 + 8;
-    for (const line of lines){
-      ctx.fillText(line, x, y);
-      y += 16;
-    }
-  }
+    const ctx = el.canvas.getContext("2d");
 
-  // ---------- Events ----------
-  function hook(){
-    const inputs = [el.wa, el.ra, el.sa, el.rb, el.sb];
-    for (const inp of inputs){
-      inp.addEventListener('input', () => {
-        // keep the displayed values inside bounds (soft clamp on blur)
-        render();
-      });
-      inp.addEventListener('blur', () => {
-        // hard clamp on blur so UI stays within constraints
-        const id = inp.id;
-        let v = Number(inp.value);
-        if (!isFiniteNumber(v)) v = 0;
-        if (id === 'wa') v = clamp(v, 0, 100);
-        if (id === 'ra' || id === 'rb') v = clamp(v, 0, 100);
-        if (id === 'sa' || id === 'sb') v = clamp(v, 0, 300);
-        inp.value = v;
-        render();
-      });
+    // Plot ranges (in percent units, not decimals)
+    const XR = { min: 0, max: 90 }; // Portfolio Standard Deviation
+    const YR = { min: 0, max: 40 }; // Portfolio Expected Return
+
+    // Margins for the plotting area
+    const M = { left: 85, right: 20, top: 55, bottom: 70 };
+
+    function clamp(x, a, b) { return Math.min(b, Math.max(a, x)); }
+
+    function setDefaults() {
+      el.wa.value = DEFAULTS.wa;
+      el.ra.value = DEFAULTS.ra;
+      el.sa.value = DEFAULTS.sa;
+      el.rb.value = DEFAULTS.rb;
+      el.sb.value = DEFAULTS.sb;
+      el.rab.value = DEFAULTS.rab;
+      el.rabVal.textContent = DEFAULTS.rab.toFixed(2);
+      redraw();
     }
 
-    el.rab.addEventListener('input', () => render());
+    // Convert form values to numbers with clamping
+    function readParams() {
+      const wa = clamp(Number(el.wa.value), 0, 100) / 100; // decimal weight
+      const ra = clamp(Number(el.ra.value), 0, 30) / 100;  // decimal return
+      const rb = clamp(Number(el.rb.value), 0, 30) / 100;
+      const sa = clamp(Number(el.sa.value), 0, 90) / 100;  // decimal stdev
+      const sb = clamp(Number(el.sb.value), 0, 90) / 100;
+      const rab = clamp(Number(el.rab.value), -1, 1);
 
-    el.reset.addEventListener('click', () => {
-      setDefaults();
-      render();
+      // Write clamped values back so UI stays consistent
+      el.wa.value = (wa * 100).toFixed(1).replace(/\.0$/, "");
+      el.ra.value = (ra * 100).toFixed(1).replace(/\.0$/, "");
+      el.rb.value = (rb * 100).toFixed(1).replace(/\.0$/, "");
+      el.sa.value = (sa * 100).toFixed(1).replace(/\.0$/, "");
+      el.sb.value = (sb * 100).toFixed(1).replace(/\.0$/, "");
+      el.rab.value = rab;
+      el.rabVal.textContent = rab.toFixed(2);
+
+      return { wa, ra, rb, sa, sb, rab };
+    }
+
+    // Compute rp, sp (returns decimals)
+    function portfolio(wa, ra, rb, sa, sb, rab) {
+      const rp = wa * ra + (1 - wa) * rb;
+      const variance =
+        (wa * wa) * (sa * sa) +
+        ((1 - wa) * (1 - wa)) * (sb * sb) +
+        2 * wa * (1 - wa) * sa * sb * rab;
+
+      // Guard against tiny negative from floating point
+      const sp = Math.sqrt(Math.max(0, variance));
+      return { rp, sp };
+    }
+
+    // Plot mapping
+    function plotRect() {
+      const w = el.canvas.width;
+      const h = el.canvas.height;
+      return {
+        x0: M.left,
+        y0: M.top,
+        x1: w - M.right,
+        y1: h - M.bottom,
+        w: (w - M.left - M.right),
+        h: (h - M.top - M.bottom)
+      };
+    }
+
+    function xToPx(xPct) {
+      const r = plotRect();
+      return r.x0 + ( (xPct - XR.min) / (XR.max - XR.min) ) * r.w;
+    }
+    function yToPx(yPct) {
+      const r = plotRect();
+      // invert y
+      return r.y1 - ( (yPct - YR.min) / (YR.max - YR.min) ) * r.h;
+    }
+
+    // Drawing helpers
+    function clear() {
+      ctx.clearRect(0, 0, el.canvas.width, el.canvas.height);
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, el.canvas.width, el.canvas.height);
+      ctx.strokeStyle = "#000";
+      ctx.fillStyle = "#000";
+      ctx.lineWidth = 1;
+    }
+
+    function drawAxes() {
+      const r = plotRect();
+
+      // border of plot area
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(r.x0, r.y0, r.w, r.h);
+
+      // ticks
+      ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      ctx.fillStyle = "#000";
+      ctx.strokeStyle = "#000";
+
+      // X ticks every 10%
+      for (let x = XR.min; x <= XR.max; x += 10) {
+        const px = xToPx(x);
+        ctx.beginPath();
+        ctx.moveTo(px, r.y1);
+        ctx.lineTo(px, r.y1 + 6);
+        ctx.stroke();
+        const txt = `${x}%`;
+        const tw = ctx.measureText(txt).width;
+        ctx.fillText(txt, px - tw / 2, r.y1 + 22);
+      }
+
+      // Y ticks every 5%
+      for (let y = YR.min; y <= YR.max; y += 5) {
+        const py = yToPx(y);
+        ctx.beginPath();
+        ctx.moveTo(r.x0 - 6, py);
+        ctx.lineTo(r.x0, py);
+        ctx.stroke();
+        const txt = `${y}%`;
+        const tw = ctx.measureText(txt).width;
+        ctx.fillText(txt, r.x0 - 10 - tw, py + 4);
+      }
+
+      // Title
+      ctx.font = "18px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      const title = "Portfolio Correlation, 2-Asset Case";
+      const tw = ctx.measureText(title).width;
+      ctx.fillText(title, (el.canvas.width - tw) / 2, 28);
+
+      // Axis labels
+      ctx.font = "14px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      const xLabel = "Portfolio Standard Deviation";
+      const xw = ctx.measureText(xLabel).width;
+      ctx.fillText(xLabel, (el.canvas.width - xw) / 2, el.canvas.height - 24);
+
+      const yLabel = "Portfolio Expected Return";
+      ctx.save();
+      ctx.translate(20, el.canvas.height / 2);
+      ctx.rotate(-Math.PI / 2);
+      const yw = ctx.measureText(yLabel).width;
+      ctx.fillText(yLabel, -yw / 2, 0);
+      ctx.restore();
+    }
+
+    function drawCurve(params) {
+      const { ra, rb, sa, sb, rab } = params;
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      for (let i = 0; i <= 200; i++) {
+        const wa = i / 200; // 0..1
+        const { rp, sp } = portfolio(wa, ra, rb, sa, sb, rab);
+        const xPct = sp * 100;
+        const yPct = rp * 100;
+
+        const px = xToPx(xPct);
+        const py = yToPx(yPct);
+
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+
+    function drawPoint(px, py, kind, label) {
+      ctx.strokeStyle = "#000";
+      ctx.fillStyle = "#000";
+      ctx.lineWidth = 2;
+
+      if (kind === "dot") {
+        ctx.beginPath();
+        ctx.arc(px, py, 4, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (kind === "x") {
+        const s = 7;
+        ctx.beginPath();
+        ctx.moveTo(px - s, py - s);
+        ctx.lineTo(px + s, py + s);
+        ctx.moveTo(px - s, py + s);
+        ctx.lineTo(px + s, py - s);
+        ctx.stroke();
+      }
+
+      ctx.lineWidth = 1;
+      ctx.font = "13px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      ctx.fillText(label, px + 8, py - 8);
+    }
+
+    function redraw() {
+      const p = readParams();
+
+      // Compute special points
+      const A = portfolio(1, p.ra, p.rb, p.sa, p.sb, p.rab);
+      const B = portfolio(0, p.ra, p.rb, p.sa, p.sb, p.rab);
+      const P = portfolio(p.wa, p.ra, p.rb, p.sa, p.sb, p.rab);
+
+      // Status line
+      el.status.textContent =
+        `A: (σ=${(A.sp*100).toFixed(2)}%, r=${(A.rp*100).toFixed(2)}%)   ` +
+        `B: (σ=${(B.sp*100).toFixed(2)}%, r=${(B.rp*100).toFixed(2)}%)   ` +
+        `P: (σ=${(P.sp*100).toFixed(2)}%, r=${(P.rp*100).toFixed(2)}%)`;
+
+      // Basic validity note (still draw even if out of axis range)
+      const inRange = (P.sp*100 >= XR.min && P.sp*100 <= XR.max && P.rp*100 >= YR.min && P.rp*100 <= YR.max);
+      el.err.textContent = inRange ? "" : "Note: Current point P is outside the displayed axis range.";
+
+      clear();
+      drawAxes();
+      drawCurve(p);
+
+      // Draw A, B, P
+      const Apx = xToPx(A.sp * 100), Apy = yToPx(A.rp * 100);
+      const Bpx = xToPx(B.sp * 100), Bpy = yToPx(B.rp * 100);
+      const Ppx = xToPx(P.sp * 100), Ppy = yToPx(P.rp * 100);
+
+      drawPoint(Bpx, Bpy, "dot", "B");
+      drawPoint(Apx, Apy, "dot", "A");
+      drawPoint(Ppx, Ppy, "x", "P");
+    }
+
+    // ----- Wire up events -----
+    ["input", "change"].forEach(evt => {
+      el.wa.addEventListener(evt, redraw);
+      el.ra.addEventListener(evt, redraw);
+      el.rb.addEventListener(evt, redraw);
+      el.sa.addEventListener(evt, redraw);
+      el.sb.addEventListener(evt, redraw);
+      el.rab.addEventListener(evt, redraw);
     });
 
-    // Redraw on resize (keeps canvas crisp by matching device pixel ratio)
-    function resizeCanvas(){
-      const dpr = window.devicePixelRatio || 1;
-      const cssWidth = el.canvas.clientWidth || 900;
-      const cssHeight = Math.round(cssWidth * (520/900));
-      el.canvas.style.height = cssHeight + 'px';
+    el.reset.addEventListener("click", setDefaults);
 
-      el.canvas.width = Math.round(cssWidth * dpr);
-      el.canvas.height = Math.round(cssHeight * dpr);
-      ctx.setTransform(dpr,0,0,dpr,0,0); // draw in CSS pixels
-      // But our drawing uses canvas pixels; reset after setting transform:
-      ctx.setTransform(1,0,0,1,0,0);
-
-      // Re-render using the new internal size
-      render();
-    }
-
-    // Make the canvas responsive while preserving aspect ratio
-    const ro = new ResizeObserver(() => resizeCanvas());
-    ro.observe(el.canvas);
-
-    // initial
+    // ----- Init -----
     setDefaults();
-    // ensure slider text matches
-    el.rabVal.textContent = Number(el.rab.value).toFixed(2);
-    render();
-  }
-
-  hook();
-})();
-</script>
+  </script>
 </body>
 </html>
