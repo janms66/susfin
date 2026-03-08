@@ -3,275 +3,501 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Interactive Plot: y = 1 / (x^z)</title>
+  <title>Interactive rp–sp Graph</title>
   <style>
-    :root { --pad: 14px; }
+    :root { color-scheme: light; }
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
       background: #fff;
-      color: #111;
+      color: #000;
     }
     .wrap {
-      max-width: 900px;
+      max-width: 980px;
       margin: 0 auto;
-      padding: var(--pad);
+      padding: 16px;
     }
-    .card {
-      border: 1px solid #e6e6e6;
-      border-radius: 14px;
-      padding: var(--pad);
-      box-shadow: 0 1px 10px rgba(0,0,0,0.04);
+    .panel {
+      border: 1px solid #000;
+      padding: 12px;
+      margin-bottom: 12px;
     }
-    .row {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      align-items: end;
     }
-    label { font-weight: 600; }
-    input[type="range"] { width: min(420px, 100%); }
-    .pill {
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: #f4f4f4;
-      border: 1px solid #e6e6e6;
-      font-variant-numeric: tabular-nums;
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
-    .hint { color: #555; font-size: 0.95rem; }
+    label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    input[type="number"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      border: 1px solid #000;
+      border-radius: 0;
+      background: #fff;
+      color: #000;
+    }
+    .hint {
+      font-size: 12px;
+      margin-top: 6px;
+    }
+    .canvas-wrap {
+      border: 1px solid #000;
+      padding: 10px;
+    }
     canvas {
       width: 100%;
-      height: 420px; /* CSS height; actual pixels set in JS for crispness */
+      height: 520px;
       display: block;
-      border-radius: 12px;
-      background: #ffffff;
-      border: 1px solid #f0f0f0;
+      background: #fff;
     }
-    .footer {
+    .slider-row {
+      display: grid;
+      grid-template-columns: 140px 1fr 120px;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+    }
+    input[type="range"] { width: 100%; }
+    .mono { font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .btn-row {
       margin-top: 8px;
-      color: #666;
-      font-size: 0.9rem;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
     }
+    button {
+      border: 1px solid #000;
+      background: #fff;
+      color: #000;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    button:hover { background: #f3f3f3; }
+    .small { font-size: 12px; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="card">
-      <div class="row">
-        <label for="z">Parameter z</label>
-        <input id="z" type="range" min="1" max="5" step="0.1" value="2" />
-        <span class="pill">z = <span id="zVal">2.0</span></span>
-      </div>
-      <div class="hint">
-        Function: <b>y = 1 / (x^z)</b>. Domain shown: x ∈ [0.1, 5]. Values are clipped for display.
+    <div class="panel">
+      <div class="grid">
+        <div>
+          <label for="ra">ra (%, 0–100)</label>
+          <input id="ra" type="number" min="0" max="100" step="0.1" value="8" />
+        </div>
+        <div>
+          <label for="rb">rb (%, 0–100)</label>
+          <input id="rb" type="number" min="0" max="100" step="0.1" value="3" />
+        </div>
+        <div>
+          <label for="sa">sa (%, 0–300)</label>
+          <input id="sa" type="number" min="0" max="300" step="0.1" value="15" />
+        </div>
+        <div>
+          <label for="sb">sb (%, 0–300)</label>
+          <input id="sb" type="number" min="0" max="300" step="0.1" value="10" />
+        </div>
+        <div>
+          <label for="waStart">wa start (0–1)</label>
+          <input id="waStart" type="number" min="0" max="1" step="0.01" value="0" />
+        </div>
+        <div>
+          <label for="waEnd">wa end (0–1)</label>
+          <input id="waEnd" type="number" min="0" max="1" step="0.01" value="1" />
+        </div>
       </div>
 
-      <canvas id="plot" aria-label="Plot of y = 1 / (x^z)"></canvas>
+      <div class="btn-row">
+        <div class="small">
+          Curve is traced by varying <span class="mono">wa</span> from start→end. Rates/vols are interpreted as percents.
+        </div>
+        <button id="resetBtn" type="button" title="Reset to defaults">Reset</button>
+      </div>
+    </div>
 
-      <div class="footer">
-        Tip: Near x → 0, the function grows quickly; the plot caps y for readability.
+    <div class="canvas-wrap">
+      <canvas id="plot" width="980" height="520" aria-label="rp–sp plot"></canvas>
+
+      <div class="slider-row">
+        <div><label for="rab" style="margin:0;">rab (−1 to 1)</label></div>
+        <input id="rab" type="range" min="-1" max="1" step="0.01" value="0" />
+        <div class="mono" id="rabVal" style="text-align:right;">0.00</div>
+      </div>
+
+      <div class="hint small">
+        Axes: <span class="mono">rp</span> on x, <span class="mono">sp</span> on y. Black on white.
       </div>
     </div>
   </div>
 
   <script>
-    // --- Config you can tweak ---
-    const X_MIN = 0.1;
-    const X_MAX = 5.0;
+    // --- Math helpers ---
+    function clamp(x, lo, hi) { return Math.min(hi, Math.max(lo, x)); }
 
-    // We cap y so the graph stays readable (since y -> infinity as x -> 0+).
-    const Y_MAX_CAP = 10.0;
-    const Y_MIN = 0.0;
+    // Inputs are in decimal (e.g., 0.08) for ra/rb, and 0.15 for sa/sb.
+    // Given wa, compute (rp, sp):
+    // rp = wa*ra + (1-wa)*rb
+    // sp = sqrt( wa^2*sa^2 + (1-wa)^2*sb^2 + wa*(1-wa)*sa*sb*rab )
+    function pointForWa(wa, ra, rb, sa, sb, rab) {
+      const w = wa;
+      const rp = w * ra + (1 - w) * rb;
+      const inside =
+        (w*w) * (sa*sa) +
+        ((1 - w)*(1 - w)) * (sb*sb) +
+        (w * (1 - w)) * sa * sb * rab;
 
-    // Plot padding in canvas pixels
-    const PAD = 50;
+      // Guard against tiny negative due to floating point or extreme inputs
+      const sp = Math.sqrt(Math.max(0, inside));
+      return { rp, sp };
+    }
 
+    // --- Canvas plotting ---
     const canvas = document.getElementById('plot');
     const ctx = canvas.getContext('2d');
 
-    const slider = document.getElementById('z');
-    const zVal = document.getElementById('zVal');
-
-    function yOf(x, z) {
-      return 1 / Math.pow(x, z);
-    }
-
-    function resizeCanvasToDisplaySize() {
+    // Make canvas crisp on HiDPI displays
+    function resizeCanvasToCSS() {
+      const cssW = canvas.clientWidth;
+      const cssH = canvas.clientHeight;
       const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      const w = Math.max(300, Math.floor(rect.width * dpr));
-      const h = Math.max(260, Math.floor(rect.height * dpr));
+      const w = Math.max(1, Math.round(cssW * dpr));
+      const h = Math.max(1, Math.round(cssH * dpr));
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;
       }
+      return { w, h, dpr };
+    }
+
+    function drawPlot(params) {
+      const { w, h } = resizeCanvasToCSS();
+
+      // Layout
+      const padL = 70, padR = 20, padT = 20, padB = 60;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+
+      // Build curve points
+      const N = 401;
+      const pts = [];
+      const wa0 = params.waStart;
+      const wa1 = params.waEnd;
+      for (let i = 0; i < N; i++) {
+        const t = i / (N - 1);
+        const wa = wa0 + t * (wa1 - wa0);
+        pts.push(pointForWa(wa, params.ra, params.rb, params.sa, params.sb, params.rab));
+      }
+
+      // Determine bounds with a little padding
+      let xmin = Infinity, xmax = -Infinity, ymin = Infinity, ymax = -Infinity;
+      for (const p of pts) {
+        xmin = Math.min(xmin, p.rp);
+        xmax = Math.max(xmax, p.rp);
+        ymin = Math.min(ymin, p.sp);
+        ymax = Math.max(ymax, p.sp);
+      }
+
+      // If degenerate, widen bounds
+      const eps = 1e-12;
+      if (Math.abs(xmax - xmin) < eps) { xmin -= 0.01; xmax += 0.01; }
+      if (Math.abs(ymax - ymin) < eps) { ymin = Math.max(0, ymin - 0.01); ymax += 0.01; }
+
+      // Add 5% padding
+      const xpad = (xmax - xmin) * 0.05;
+      const ypad = (ymax - ymin) * 0.08;
+      xmin -= xpad; xmax += xpad;
+      ymin = Math.max(0, ymin - ypad); ymax += ypad;
+
+      // Nice ticks
+      function niceStep(range) {
+        const rough = range / 6;
+        const pow10 = Math.pow(10, Math.floor(Math.log10(rough)));
+        const scaled = rough / pow10;
+        let nice;
+        if (scaled < 1.5) nice = 1;
+        else if (scaled < 3) nice = 2;
+        else if (scaled < 7) nice = 5;
+        else nice = 10;
+        return nice * pow10;
+      }
+      function tickStart(min, step) { return Math.floor(min / step) * step; }
+
+      const xStep = niceStep(xmax - xmin);
+      const yStep = niceStep(ymax - ymin);
+
+      // Mapping functions
+      const xToPix = (x) => padL + (x - xmin) / (xmax - xmin) * plotW;
+      const yToPix = (y) => padT + (1 - (y - ymin) / (ymax - ymin)) * plotH;
+
+      // Clear
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(dpr, dpr);
-    }
+      ctx.clearRect(0, 0, w, h);
 
-    function clear() {
-      const rect = canvas.getBoundingClientRect();
-      ctx.clearRect(0, 0, rect.width, rect.height);
-    }
+      // Background white (explicit)
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, w, h);
 
-    function drawAxes(rect, xToPx, yToPx) {
-      const W = rect.width;
-      const H = rect.height;
-
-      // Light grid
+      // Axes + ticks in black
+      ctx.strokeStyle = "#000";
+      ctx.fillStyle = "#000";
       ctx.lineWidth = 1;
-      ctx.strokeStyle = 'rgba(0,0,0,0.06)';
 
-      // vertical grid lines (x)
-      const xTicks = 10;
-      for (let i = 0; i <= xTicks; i++) {
-        const x = X_MIN + (i / xTicks) * (X_MAX - X_MIN);
-        const px = xToPx(x);
+      // Plot border
+      ctx.strokeRect(padL, padT, plotW, plotH);
+
+      // Ticks + labels
+      ctx.font = `${Math.round(12 * (window.devicePixelRatio || 1))}px system-ui`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+
+      // x ticks
+      for (let x = tickStart(xmin, xStep); x <= xmax + 0.5 * xStep; x += xStep) {
+        const px = xToPix(x);
+        if (px < padL - 1 || px > padL + plotW + 1) continue;
         ctx.beginPath();
-        ctx.moveTo(px, PAD);
-        ctx.lineTo(px, H - PAD);
+        ctx.moveTo(px, padT + plotH);
+        ctx.lineTo(px, padT + plotH + 6);
         ctx.stroke();
+        const label = (x * 100).toFixed(1) + "%";
+        ctx.fillText(label, px, padT + plotH + 8);
       }
 
-      // horizontal grid lines (y)
-      const yTicks = 10;
-      for (let i = 0; i <= yTicks; i++) {
-        const y = Y_MIN + (i / yTicks) * (Y_MAX_CAP - Y_MIN);
-        const py = yToPx(y);
+      // y ticks
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      for (let y = tickStart(ymin, yStep); y <= ymax + 0.5 * yStep; y += yStep) {
+        const py = yToPix(y);
+        if (py < padT - 1 || py > padT + plotH + 1) continue;
         ctx.beginPath();
-        ctx.moveTo(PAD, py);
-        ctx.lineTo(W - PAD, py);
+        ctx.moveTo(padL - 6, py);
+        ctx.lineTo(padL, py);
         ctx.stroke();
+        const label = (y * 100).toFixed(1) + "%";
+        ctx.fillText(label, padL - 10, py);
       }
 
-      // Axes
-      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-      ctx.lineWidth = 1.5;
+      // Axis labels
+      const dpr = window.devicePixelRatio || 1;
+      ctx.font = `${Math.round(14 * dpr)}px system-ui`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillText("rp", padL + plotW / 2, h - 10);
 
-      // x-axis at y=0
-      const y0 = yToPx(0);
-      ctx.beginPath();
-      ctx.moveTo(PAD, y0);
-      ctx.lineTo(W - PAD, y0);
-      ctx.stroke();
-
-      // y-axis at x=X_MIN (left)
-      ctx.beginPath();
-      ctx.moveTo(PAD, PAD);
-      ctx.lineTo(PAD, H - PAD);
-      ctx.stroke();
-
-      // Labels
-      ctx.fillStyle = 'rgba(0,0,0,0.75)';
-      ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
-
-      // x labels
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      for (let i = 0; i <= 5; i++) {
-        const x = i; // 0..5
-        if (x < X_MIN || x > X_MAX) continue;
-        const px = xToPx(x);
-        ctx.fillText(String(x), px, (H - PAD) + 8);
-      }
-      ctx.fillText('x', (rect.width / 2), rect.height - 18);
-
-      // y labels
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'middle';
-      for (let i = 0; i <= 5; i++) {
-        const y = i * 2; // 0,2,4,...,10
-        const py = yToPx(y);
-        ctx.fillText(String(y), PAD - 8, py);
-      }
       ctx.save();
-      ctx.translate(16, rect.height / 2);
+      ctx.translate(18 * dpr, padT + plotH / 2);
       ctx.rotate(-Math.PI / 2);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText('y', 0, 0);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText("sp", 0, 0);
       ctx.restore();
-    }
 
-    function drawCurve(rect, z, xToPx, yToPx) {
-      ctx.lineWidth = 2.5;
-      ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-
-      const W = rect.width;
-      const H = rect.height;
-
-      // sample points
-      const N = 500;
-      let started = false;
-
+      // Draw curve
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      for (let i = 0; i <= N; i++) {
-        const x = X_MIN + (i / N) * (X_MAX - X_MIN);
-        let y = yOf(x, z);
-
-        // clip
-        if (!Number.isFinite(y)) y = Y_MAX_CAP;
-        y = Math.min(Y_MAX_CAP, Math.max(Y_MIN, y));
-
-        const px = xToPx(x);
-        const py = yToPx(y);
-
-        if (!started) {
-          ctx.moveTo(px, py);
-          started = true;
-        } else {
-          ctx.lineTo(px, py);
-        }
+      for (let i = 0; i < pts.length; i++) {
+        const px = xToPix(pts[i].rp);
+        const py = yToPix(pts[i].sp);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
       }
       ctx.stroke();
 
-      // Title/annotation
-      ctx.fillStyle = 'rgba(0,0,0,0.75)';
-      ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto, Arial';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillText(`y = 1 / (x^z)   (z = ${z.toFixed(1)})`, PAD, 16);
-      ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
-      ctx.fillStyle = 'rgba(0,0,0,0.55)';
-      ctx.fillText(`y capped at ${Y_MAX_CAP} for display`, PAD, 36);
+      // Mark endpoints (wa start and wa end)
+      function drawDot(p, r) {
+        ctx.beginPath();
+        ctx.arc(xToPix(p.rp), yToPix(p.sp), r, 0, Math.PI * 2);
+        ctx.fillStyle = "#000";
+        ctx.fill();
+      }
+      drawDot(pts[0], 4);
+      drawDot(pts[pts.length - 1], 4);
+
+      // Hover interaction (nearest point)
+      // We'll store bounds + points for mouse move handlers
+      return { pts, xmin, xmax, ymin, ymax, xToPix, yToPix, padL, padT, plotW, plotH };
     }
 
-    function render() {
-      resizeCanvasToDisplaySize();
+    // --- UI wiring ---
+    const els = {
+      ra: document.getElementById('ra'),
+      rb: document.getElementById('rb'),
+      sa: document.getElementById('sa'),
+      sb: document.getElementById('sb'),
+      waStart: document.getElementById('waStart'),
+      waEnd: document.getElementById('waEnd'),
+      rab: document.getElementById('rab'),
+      rabVal: document.getElementById('rabVal'),
+      resetBtn: document.getElementById('resetBtn'),
+    };
 
-      const rect = canvas.getBoundingClientRect(); // CSS pixels
-      clear();
+    const defaults = {
+      ra: 8, rb: 3, sa: 15, sb: 10, waStart: 0, waEnd: 1, rab: 0
+    };
 
-      // Mapping functions in CSS pixels
-      const W = rect.width;
-      const H = rect.height;
+    function readParams() {
+      // Convert percents to decimals for computation
+      const raPct = clamp(parseFloat(els.ra.value || "0"), 0, 100);
+      const rbPct = clamp(parseFloat(els.rb.value || "0"), 0, 100);
+      const saPct = clamp(parseFloat(els.sa.value || "0"), 0, 300);
+      const sbPct = clamp(parseFloat(els.sb.value || "0"), 0, 300);
 
-      const xToPx = (x) => {
-        const t = (x - X_MIN) / (X_MAX - X_MIN);
-        return PAD + t * (W - 2 * PAD);
+      let waStart = clamp(parseFloat(els.waStart.value || "0"), 0, 1);
+      let waEnd = clamp(parseFloat(els.waEnd.value || "1"), 0, 1);
+
+      // If user flipped them, we still allow (curve traced backwards)
+      const rab = clamp(parseFloat(els.rab.value || "0"), -1, 1);
+
+      // Write back clamped values (keeps inputs honest)
+      els.ra.value = raPct;
+      els.rb.value = rbPct;
+      els.sa.value = saPct;
+      els.sb.value = sbPct;
+      els.waStart.value = waStart.toFixed(2);
+      els.waEnd.value = waEnd.toFixed(2);
+
+      return {
+        ra: raPct / 100,
+        rb: rbPct / 100,
+        sa: saPct / 100,
+        sb: sbPct / 100,
+        waStart,
+        waEnd,
+        rab
       };
-
-      const yToPx = (y) => {
-        const t = (y - Y_MIN) / (Y_MAX_CAP - Y_MIN);
-        // invert y
-        return (H - PAD) - t * (H - 2 * PAD);
-      };
-
-      drawAxes(rect, xToPx, yToPx);
-      drawCurve(rect, Number(slider.value), xToPx, yToPx);
     }
 
-    slider.addEventListener('input', () => {
-      zVal.textContent = Number(slider.value).toFixed(1);
-      render();
+    let lastPlotState = null;
+
+    function rerender() {
+      const params = readParams();
+      els.rabVal.textContent = params.rab.toFixed(2);
+      lastPlotState = drawPlot(params);
+    }
+
+    // Update on input
+    for (const id of ["ra","rb","sa","sb","waStart","waEnd"]) {
+      els[id].addEventListener("input", rerender);
+      els[id].addEventListener("change", rerender);
+    }
+    els.rab.addEventListener("input", rerender);
+
+    // Reset button
+    els.resetBtn.addEventListener("click", () => {
+      els.ra.value = defaults.ra;
+      els.rb.value = defaults.rb;
+      els.sa.value = defaults.sa;
+      els.sb.value = defaults.sb;
+      els.waStart.value = defaults.waStart;
+      els.waEnd.value = defaults.waEnd;
+      els.rab.value = defaults.rab;
+      rerender();
     });
 
-    window.addEventListener('resize', render);
+    // Hover tooltip-like readout (simple: draw crosshair + text)
+    function withinPlot(x, y, st) {
+      return x >= st.padL && x <= st.padL + st.plotW && y >= st.padT && y <= st.padT + st.plotH;
+    }
 
-    // init
-    zVal.textContent = Number(slider.value).toFixed(1);
-    render();
+    function redrawWithHover(mouseX, mouseY) {
+      // Re-render base plot first
+      rerender();
+      const st = lastPlotState;
+      if (!st) return;
+
+      const { pts } = st;
+      // Find nearest point in pixel space (linear scan; N=401 so fine)
+      let best = null;
+      let bestD = Infinity;
+      for (const p of pts) {
+        const px = st.xToPix(p.rp);
+        const py = st.yToPix(p.sp);
+        const dx = px - mouseX;
+        const dy = py - mouseY;
+        const d = dx*dx + dy*dy;
+        if (d < bestD) { bestD = d; best = { p, px, py }; }
+      }
+
+      if (!best) return;
+
+      // Crosshair + point marker
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 1;
+
+      ctx.beginPath();
+      ctx.moveTo(best.px, st.padT);
+      ctx.lineTo(best.px, st.padT + st.plotH);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(st.padL, best.py);
+      ctx.lineTo(st.padL + st.plotW, best.py);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(best.px, best.py, 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#000";
+      ctx.fill();
+
+      // Label near top-left of plot
+      const rpPct = (best.p.rp * 100).toFixed(2);
+      const spPct = (best.p.sp * 100).toFixed(2);
+      const text = `rp=${rpPct}%, sp=${spPct}%`;
+
+      const dpr = window.devicePixelRatio || 1;
+      ctx.font = `${Math.round(13 * dpr)}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+
+      const x = st.padL + 8;
+      const y = st.padT + 8;
+      // Simple white box with black border
+      const metrics = ctx.measureText(text);
+      const boxW = metrics.width + 14;
+      const boxH = 22 * dpr;
+
+      ctx.fillStyle = "#fff";
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 1;
+      ctx.fillRect(x - 6, y - 4, boxW, boxH);
+      ctx.strokeRect(x - 6, y - 4, boxW, boxH);
+
+      ctx.fillStyle = "#000";
+      ctx.fillText(text, x, y);
+    }
+
+    let hoverRAF = null;
+    canvas.addEventListener("mousemove", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const mx = (e.clientX - rect.left) * dpr;
+      const my = (e.clientY - rect.top) * dpr;
+
+      if (!lastPlotState || !withinPlot(mx, my, lastPlotState)) {
+        // Just base render if outside
+        if (hoverRAF) cancelAnimationFrame(hoverRAF);
+        hoverRAF = requestAnimationFrame(rerender);
+        return;
+      }
+
+      if (hoverRAF) cancelAnimationFrame(hoverRAF);
+      hoverRAF = requestAnimationFrame(() => redrawWithHover(mx, my));
+    });
+
+    canvas.addEventListener("mouseleave", () => rerender());
+    window.addEventListener("resize", () => rerender());
+
+    // Initial render
+    rerender();
   </script>
 </body>
 </html>
