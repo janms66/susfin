@@ -166,7 +166,7 @@
     <div class="sliders">
       <div class="sliderBlock">
         <div class="topRow">
-          <label for="waSlider">weight in A</label>
+          <label for="waSlider">weight in A (remainder in B)</label>
           <div class="value"><span id="waVal">50</span>%</div>
         </div>
         <input id="waSlider" type="range" min="0" max="100" step="1" />
@@ -221,11 +221,11 @@
     // ---- Initial values (percent inputs are in 0..100) ----
     const defaults = {
       waPct: 50,
-      raPct: 10,
-      saPct: 10,
-      rbPct: 15,
-      sbPct: 20,
-      rab: 0.5
+      raPct: 8,
+      saPct: 12,
+      rbPct: 25,
+      sbPct: 21,
+      rab: 0.1
     };
 
     function setDefaults() {
